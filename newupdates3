@@ -210,6 +210,13 @@
           border: 2px solid #bbb !important; /* more visible border */
           border-radius: 6px;
           position: relative; /* For popup positioning */
+          transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .date-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px var(--shadow);
+            z-index: 10;
         }
         
         .date-box.has-trades {
@@ -387,6 +394,24 @@
         }
         [data-theme="light"] .trades-table tbody tr:not(:last-child) { border-bottom-color: var(--border-color); }
 
+        /* New Add Trade Form Styles */
+        .form-btn-group button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-secondary);
+            transition: all 0.2s ease-in-out;
+        }
+        .form-btn-group button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+         [data-theme="dark"] .form-btn-group button.active {
+             color: #0d1b2a;
+         }
+
 
     </style>
 </head>
@@ -556,69 +581,100 @@
 
                     <!-- Add Trade Page -->
                     <div id="add-trade" class="page">
-                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div class="lg:col-span-2">
-                                <form id="manual-trade-form">
-                                    <input type="hidden" id="trade-id" name="tradeId">
-                                    <div class="rounded-lg shadow-sm" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);">
-                                        <div class="p-6 border-b" style="border-color: var(--border-color);">
-                                            <h3 id="trade-form-title" class="text-lg font-semibold" style="color: var(--text-primary);">Log a New Trade</h3>
-                                            <button type="button" id="clear-trade-form-btn" class="text-sm" style="color: var(--text-secondary);">Clear Form</button>
-                                        </div>
-                                        <div class="p-6 space-y-6">
-                                            <!-- Trade Details -->
-                                            <div>
-                                                <h4 class="font-semibold mb-2" style="color: var(--text-primary);">Trade Details</h4>
-                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div class="relative">
-                                                        <label for="asset-input" class="block text-sm" style="color: var(--text-secondary);">Asset/Instrument</label>
-                                                        <input name="asset" type="text" id="asset-input" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="e.g., RELIANCE, NIFTY" required>
-                                                        <div id="asset-suggestions" class="absolute z-10 w-full rounded-md mt-1 hidden max-h-48 overflow-y-auto" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);"></div>
-                                                    </div>
-                                                    <div><label for="segment" class="block text-sm" style="color: var(--text-secondary);">Segment</label><select name="segment" id="segment" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"><option>Equity</option><option>F&O</option><option>Commodity</option><option>Currency</option></select></div>
-                                                    <div><label for="entry-date" class="block text-sm" style="color: var(--text-secondary);">Entry Date & Time</label><input name="entryDate" type="datetime-local" id="entry-date" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" required></div>
-                                                    <div><label for="exit-date" class="block text-sm" style="color: var(--text-secondary);">Exit Date & Time (Optional)</label><input name="exitDate" type="datetime-local" id="exit-date" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"></div>
-                                                    <div><label for="direction" class="block text-sm" style="color: var(--text-secondary);">Direction</label><select name="direction" id="direction" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"><option>Long</option><option>Short</option></select></div>
-                                                    <div><label for="trade-type" class="block text-sm" style="color: var(--text-secondary);">Type</label><select name="tradeType" id="trade-type" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"><option>Intraday</option><option>Positional</option></select></div>
-                                                    <div><label for="entry-price" class="block text-sm" style="color: var(--text-secondary);">Entry Price</label><input name="entryPrice" type="number" step="any" id="entry-price" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00" required></div>
-                                                    <div><label for="exit-price" class="block text-sm" style="color: var(--text-secondary);">Exit Price (Optional)</label><input name="exitPrice" type="number" step="any" id="exit-price" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
-                                                    <div><label for="quantity" class="block text-sm" style="color: var(--text-secondary);">Quantity / Lot Size</label><input name="quantity" type="number" id="quantity" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0" required></div>
-                                                    <div>
-                                                        <label for="brokerage" class="block text-sm" style="color: var(--text-secondary);">Brokerage (Optional)</label>
-                                                        <input name="brokerage" type="number" step="any" id="brokerage" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00">
-                                                    </div>
-                                                    <div>
-                                                        <label for="other-fees" class="block text-sm" style="color: var(--text-secondary);">Other Fees (Optional)</label>
-                                                        <input type="number" step="any" id="other-fees" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- Risk & Plan -->
-                                            <div>
-                                                <h4 class="font-semibold mb-2" style="color: var(--text-primary);">Risk & Plan</h4>
-                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    <div><label for="stop-loss" class="block text-sm" style="color: var(--text-secondary);">Stop Loss (Optional)</label><input name="stopLoss" type="number" step="any" id="stop-loss" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
-                                                    <div><label for="target" class="block text-sm" style="color: var(--text-secondary);">Target Price (Optional)</label><input name="target" type="number" step="any" id="target" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
-                                                    <div><label for="strategy" class="block text-sm" style="color: var(--text-secondary);">Strategy Tag</label><select name="strategy" id="strategy" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"><option>Price Action</option><option>Trend Following</option><option>Nifty Breakout</option><option>Other</option></select></div>
-                                                </div>
-                                            </div>
-                                            <!-- Qualitative Data -->
-                                            <div>
-                                                 <h4 class="font-semibold mb-2" style="color: var(--text-primary);">Qualitative Data</h4>
-                                                <div><label for="reasons" class="block text-sm" style="color: var(--text-secondary);">Reasons for Entry/Exit (Optional)</label><textarea name="reasons" id="reasons" rows="3" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"></textarea></div>
-                                            </div>
-                                        </div>
-                                        <div class="p-4 border-t flex justify-end" style="background-color: var(--bg-secondary); border-color: var(--border-color);">
-                                            <button type="submit" class="btn-primary font-semibold py-2 px-6 rounded-md shadow-sm flex items-center justify-center min-w-[120px]">
-                                                <span class="btn-text">Save Trade</span>
-                                                <span class="spinner hidden"></span>
-                                            </button>
+                        <div class="max-w-4xl mx-auto">
+                            <form id="manual-trade-form" class="p-6 rounded-lg shadow-sm" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);">
+                                <input type="hidden" id="trade-id" name="tradeId">
+                                <h2 id="trade-form-title" class="text-2xl font-bold mb-6" style="color: var(--text-primary);">Add New Trade</h2>
+
+                                <!-- Trading Style -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Select Trading Style</label>
+                                    <div id="trading-style-group" class="form-btn-group flex flex-wrap gap-2">
+                                        <button type="button" data-value="Scalping">Scalping</button>
+                                        <button type="button" data-value="Intraday">Intraday</button>
+                                        <button type="button" data-value="Swing">Swing</button>
+                                        <button type="button" data-value="Position">Position</button>
+                                        <button type="button" data-value="Long-Term" class="active">Long-Term</button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                                    <!-- Symbol -->
+                                    <div class="relative">
+                                        <label for="asset-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Symbol</label>
+                                        <input name="asset" type="text" id="asset-input" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="e.g. RELIANCE, NIFTY 50" required>
+                                        <div id="asset-suggestions" class="absolute z-10 w-full rounded-md mt-1 hidden max-h-48 overflow-y-auto" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);"></div>
+                                    </div>
+                                    
+                                    <!-- Segment -->
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Segment</label>
+                                        <div id="segment-group" class="form-btn-group flex flex-wrap gap-2">
+                                            <button type="button" data-value="Equity">Equity</button>
+                                            <button type="button" data-value="F&O">F&O</button>
+                                            <button type="button" data-value="Commodity">Commodity</button>
+                                            <button type="button" data-value="Currency" class="active">Currency</button>
                                         </div>
                                     </div>
-                                </form>
-                            </div>
-                         </div>
+                                </div>
+                                
+                                <!-- Direction -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Direction</label>
+                                    <div id="direction-group" class="form-btn-group flex flex-wrap gap-2">
+                                        <button type="button" data-value="Long" class="active"><i data-feather="arrow-up" class="inline-block mr-2 h-4 w-4"></i>Long</button>
+                                        <button type="button" data-value="Short"><i data-feather="arrow-down" class="inline-block mr-2 h-4 w-4"></i>Short</button>
+                                    </div>
+                                </div>
+
+                                <!-- Financials Grid -->
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4 items-end mb-6">
+                                    <!-- Entry Details -->
+                                    <div><label for="entry-date" class="block text-sm font-medium" style="color: var(--text-secondary);">Entry Date & Time</label><input name="entryDate" type="datetime-local" id="entry-date" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" required></div>
+                                    <div><label for="entry-price" class="block text-sm font-medium" style="color: var(--text-secondary);">Entry Price</label><input name="entryPrice" type="number" step="any" id="entry-price" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00" required></div>
+                                    <div><label for="quantity" class="block text-sm font-medium" style="color: var(--text-secondary);">Quantity / Lot Size</label><input name="quantity" type="number" id="quantity" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0" required></div>
+                                    <div><label for="total-amount" class="block text-sm font-medium" style="color: var(--text-secondary);">Total Amount</label><input id="total-amount" type="text" class="mt-1 w-full rounded-md border" style="background-color: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-color);" value="₹0.00" readonly></div>
+                                    
+                                    <!-- Exit Details -->
+                                    <div><label for="exit-date" class="block text-sm font-medium" style="color: var(--text-secondary);">Exit Date & Time</label><input name="exitDate" type="datetime-local" id="exit-date" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"></div>
+                                    <div><label for="exit-price" class="block text-sm font-medium" style="color: var(--text-secondary);">Exit Price</label><input name="exitPrice" type="number" step="any" id="exit-price" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
+                                    <div><label for="exit-quantity" class="block text-sm font-medium" style="color: var(--text-secondary);">Exit Quantity</label><input name="exitQuantity" type="number" id="exit-quantity" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0"></div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div><label for="pnl-amount" class="block text-sm font-medium" style="color: var(--text-secondary);">P&L Amount</label><input id="pnl-amount" type="text" class="mt-1 w-full rounded-md border" style="background-color: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-color);" value="₹0.00" readonly></div>
+                                        <div><label for="pnl-percent" class="block text-sm font-medium" style="color: var(--text-secondary);">P&L (%)</label><input id="pnl-percent" type="text" class="mt-1 w-full rounded-md border" style="background-color: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-color);" value="0.00%" readonly></div>
+                                    </div>
+
+                                    <!-- Risk and Fees -->
+                                    <div><label for="stop-loss" class="block text-sm font-medium" style="color: var(--text-secondary);">Stop Loss</label><input name="stopLoss" type="number" step="any" id="stop-loss" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
+                                    <div><label for="target" class="block text-sm font-medium" style="color: var(--text-secondary);">Target Price</label><input name="target" type="number" step="any" id="target" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
+                                    <div><label for="brokerage" class="block text-sm font-medium" style="color: var(--text-secondary);">Brokerage</label><input name="brokerage" type="number" step="any" id="brokerage" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
+                                    <div><label for="other-fees" class="block text-sm font-medium" style="color: var(--text-secondary);">Other Fees</label><input name="otherFees" type="number" step="any" id="other-fees" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="0.00"></div>
+                                </div>
+                                
+                                <!-- Dropdowns -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                                    <div><label for="strategy" class="block text-sm font-medium" style="color: var(--text-secondary);">Strategy Tag</label><select name="strategy" id="strategy" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"><option>Price Action</option><option>Trend Following</option><option>Nifty Breakout</option><option>Other</option></select></div>
+                                    <div><label for="outcome-summary" class="block text-sm font-medium" style="color: var(--text-secondary);">Outcome Summary</label><select name="outcomeSummary" id="outcome-summary" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);"><option>Select Outcome Summary</option><option>Target Hit</option><option>Stop Loss Hit</option><option>Exited Early (Profit)</option><option>Exited Early (Loss)</option><option>Break Even</option></select></div>
+                                </div>
+
+                                <!-- Qualitative Data -->
+                                <div class="mb-6">
+                                     <label for="reasons" class="block text-sm font-medium" style="color: var(--text-secondary);">Qualitative Data</label>
+                                     <textarea name="reasons" id="reasons" rows="3" class="mt-1 w-full rounded-md border focus:border-blue-500 focus:ring-blue-500" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);" placeholder="Reasons for Entry/Exit (Optional)"></textarea>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex justify-end gap-4">
+                                    <button type="button" id="clear-trade-form-btn" class="font-semibold py-2 px-6 rounded-md shadow-sm" style="background-color: var(--bg-tertiary); color: var(--text-secondary);">Reset</button>
+                                    <button type="submit" class="btn-primary font-semibold py-2 px-6 rounded-md shadow-sm flex items-center justify-center min-w-[120px]">
+                                        <span class="btn-text">Save Trade</span>
+                                        <span class="spinner hidden"></span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
+
 
                     <!-- Trade History Page (Enhanced) -->
                     <div id="trade-history" class="page">
@@ -1524,13 +1580,65 @@
             renderAllCharts();
         };
         
-        // --- TRADE MANAGEMENT ---
+        // --- TRADE MANAGEMENT (NEW LAYOUT) ---
         const tradeForm = document.getElementById('manual-trade-form');
+        const tradeFormInputs = ['asset-input', 'entry-date', 'entry-price', 'quantity', 'exit-date', 'exit-price', 'exit-quantity', 'stop-loss', 'target', 'brokerage', 'other-fees', 'strategy', 'outcome-summary', 'reasons'];
+        
+        const updateCalculations = () => {
+            const entryPrice = parseFloat(document.getElementById('entry-price').value) || 0;
+            const quantity = parseInt(document.getElementById('quantity').value, 10) || 0;
+            const brokerage = parseFloat(document.getElementById('brokerage').value) || 0;
+            const otherFees = parseFloat(document.getElementById('other-fees').value) || 0;
+
+            const totalAmount = (entryPrice * quantity) + brokerage + otherFees;
+            document.getElementById('total-amount').value = formatCurrency(totalAmount);
+
+            const exitPrice = parseFloat(document.getElementById('exit-price').value) || 0;
+            const exitQuantity = parseInt(document.getElementById('exit-quantity').value, 10) || quantity;
+            const direction = document.querySelector('#direction-group .active')?.dataset.value || 'Long';
+
+            if (exitPrice > 0 && entryPrice > 0 && exitQuantity > 0) {
+                const pnlAmount = (exitPrice - entryPrice) * exitQuantity * (direction === 'Short' ? -1 : 1);
+                const pnlPercent = (pnlAmount / (entryPrice * exitQuantity)) * 100;
+                document.getElementById('pnl-amount').value = formatCurrency(pnlAmount);
+                document.getElementById('pnl-percent').value = `${pnlPercent.toFixed(2)}%`;
+            } else {
+                document.getElementById('pnl-amount').value = formatCurrency(0);
+                document.getElementById('pnl-percent').value = '0.00%';
+            }
+        };
+        
+        tradeForm.addEventListener('input', (e) => {
+            if (['entry-price', 'quantity', 'brokerage', 'other-fees', 'exit-price', 'exit-quantity'].includes(e.target.id)) {
+                updateCalculations();
+            }
+        });
+        
+        document.querySelectorAll('.form-btn-group').forEach(group => {
+            group.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button) {
+                    group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                     if(group.id === 'direction-group') { // Recalculate P&L if direction changes
+                        updateCalculations();
+                    }
+                }
+            });
+        });
         
         const clearTradeForm = () => {
              tradeForm.reset();
              document.getElementById('trade-id').value = '';
-             document.getElementById('trade-form-title').textContent = 'Log a New Trade';
+             document.getElementById('trade-form-title').textContent = 'Add New Trade';
+             document.querySelectorAll('.form-btn-group').forEach(group => {
+                 group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                 // Set default active buttons
+                 if (group.id === 'trading-style-group') group.querySelector('[data-value="Long-Term"]').classList.add('active');
+                 if (group.id === 'segment-group') group.querySelector('[data-value="Currency"]').classList.add('active');
+                 if (group.id === 'direction-group') group.querySelector('[data-value="Long"]').classList.add('active');
+             });
+             updateCalculations();
         };
 
         document.getElementById('asset-input').addEventListener('input', async (e) => {
@@ -1559,7 +1667,6 @@
             document.getElementById('asset-suggestions').classList.add('hidden');
         });
 
-
         tradeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!appState.user) {
@@ -1573,12 +1680,19 @@
             const tradeId = document.getElementById('trade-id').value;
             
             const tradeData = {
+                // New Fields
+                tradingStyle: document.querySelector('#trading-style-group .active')?.dataset.value,
+                segment: document.querySelector('#segment-group .active')?.dataset.value,
+                direction: document.querySelector('#direction-group .active')?.dataset.value,
+                exitQuantity: document.getElementById('exit-quantity').value ? parseInt(document.getElementById('exit-quantity').value, 10) : null,
+                pnlAmount: parseFloat(document.getElementById('pnl-amount').value.replace('₹', '').replace(/,/g, '')) || 0,
+                pnlPercent: parseFloat(document.getElementById('pnl-percent').value.replace('%', '')) || 0,
+                outcomeSummary: document.getElementById('outcome-summary').value,
+                
+                // Existing Fields (for backward compatibility and core logic)
                 asset: document.getElementById('asset-input').value,
-                segment: document.getElementById('segment').value,
                 entryDate: new Date(document.getElementById('entry-date').value),
                 exitDate: document.getElementById('exit-date').value ? new Date(document.getElementById('exit-date').value) : null,
-                direction: document.getElementById('direction').value,
-                tradeType: document.getElementById('trade-type').value,
                 entryPrice: parseFloat(document.getElementById('entry-price').value),
                 exitPrice: document.getElementById('exit-price').value ? parseFloat(document.getElementById('exit-price').value) : null,
                 quantity: parseInt(document.getElementById('quantity').value, 10),
@@ -1588,8 +1702,12 @@
                 target: document.getElementById('target').value ? parseFloat(document.getElementById('target').value) : null,
                 strategy: document.getElementById('strategy').value,
                 reasons: document.getElementById('reasons').value,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                
+                // Keep tradeType for older reports if needed, can be inferred from tradingStyle
+                tradeType: ['Scalping', 'Intraday'].includes(document.querySelector('#trading-style-group .active')?.dataset.value) ? 'Intraday' : 'Positional'
             };
+
 
             if (appState.challenge && appState.challenge.id) {
                 tradeData.challengeId = appState.challenge.id;
@@ -1673,24 +1791,31 @@
              if (action === 'edit') {
                  const trade = appState.trades.find(t => t.id === tradeId);
                  if (trade) {
+                    clearTradeForm(); // Reset form to defaults first
                      document.getElementById('trade-id').value = trade.id;
                      document.getElementById('asset-input').value = trade.asset;
-                     document.getElementById('segment').value = trade.segment;
+                     
+                     // Set active buttons
+                     if(trade.tradingStyle) document.querySelector(`#trading-style-group button[data-value="${trade.tradingStyle}"]`)?.classList.add('active');
+                     if(trade.segment) document.querySelector(`#segment-group button[data-value="${trade.segment}"]`)?.classList.add('active');
+                     if(trade.direction) document.querySelector(`#direction-group button[data-value="${trade.direction}"]`)?.classList.add('active');
+                     
                      document.getElementById('entry-date').value = trade.entryDate.toDate().toISOString().slice(0, 16);
                      document.getElementById('exit-date').value = trade.exitDate ? trade.exitDate.toDate().toISOString().slice(0, 16) : '';
-                     document.getElementById('direction').value = trade.direction;
-                     document.getElementById('trade-type').value = trade.tradeType;
                      document.getElementById('entry-price').value = trade.entryPrice;
                      document.getElementById('exit-price').value = trade.exitPrice || '';
                      document.getElementById('quantity').value = trade.quantity;
+                     document.getElementById('exit-quantity').value = trade.exitQuantity || trade.quantity;
                      document.getElementById('brokerage').value = trade.brokerage || '';
                      document.getElementById('other-fees').value = trade.otherFees || '';
                      document.getElementById('stop-loss').value = trade.stopLoss || '';
                      document.getElementById('target').value = trade.target || '';
                      document.getElementById('strategy').value = trade.strategy;
+                     document.getElementById('outcome-summary').value = trade.outcomeSummary || 'Select Outcome Summary';
                      document.getElementById('reasons').value = trade.reasons || '';
                      
                      document.getElementById('trade-form-title').textContent = `Editing Trade: ${trade.asset}`;
+                     updateCalculations();
                      navigateTo('add-trade');
                  }
              } else if (action === 'delete') {
@@ -2856,11 +2981,8 @@
 
         // --- INITIAL LOAD ---
         applyTheme();
+        feather.replace();
     </script>
 </body>
 </html>
-
-
-
-
 
