@@ -567,9 +567,26 @@
                                     <canvas id="pnlBySegmentChart"></canvas>
                                 </div>
                             </div>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div class="p-6 rounded-lg shadow-sm" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);">
+                                    <h3 class="font-semibold mb-4" style="color: var(--text-primary);">Win/Loss Distribution</h3>
+                                    <div class="h-64 flex items-center justify-center relative">
+                                        <canvas id="winLossDistributionChart"></canvas>
+                                        <p id="winLossMessage" class="hidden absolute text-center" style="color: var(--text-muted);">No trades yet</p>
+                                    </div>
+                                </div>
+                                <div class="p-6 rounded-lg shadow-sm" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);">
+                                    <h3 class="font-semibold mb-4" style="color: var(--text-primary);">Performance by Day of Week</h3>
+                                    <canvas id="performanceByDayChart"></canvas>
+                                </div>
+                            </div>
+                            <!-- Daily P&L Chart -->
                             <div class="p-6 rounded-lg shadow-sm" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);">
-                                <h3 class="font-semibold mb-4" style="color: var(--text-primary);">Performance by Day of Week</h3>
-                                <canvas id="performanceByDayChart"></canvas>
+                                <h3 class="font-semibold mb-4" style="color: var(--text-primary);">Daily P&L</h3>
+                                <div class="relative h-64">
+                                     <canvas id="dailyPnlChart"></canvas>
+                                     <p id="dailyPnlMessage" class="hidden absolute inset-0 flex items-center justify-center" style="color: var(--text-muted);">No P&L data yet</p>
+                                </div>
                             </div>
                             <!-- ADDED: New Chart for Daily Win Rate -->
                             <div class="p-6 rounded-lg shadow-sm" style="background-color: var(--bg-primary); border: 1px solid var(--border-color);">
@@ -2595,7 +2612,7 @@
             document.getElementById('challenge-max-drawdown').textContent = `${maxDrawdown.toFixed(2)}%`;
 
             // --- Update Chart ---
-            const ctx = document.getElementById('challengeProgressChart')?.getContext('2d');
+            const ctx = document.getElementById('challengeProgressChart')?.getContext('d');
             if (ctx) {
                 if (challengeChart) challengeChart.destroy();
                 challengeChart = new Chart(ctx, {
@@ -2876,6 +2893,139 @@
                 options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: colors.textColor, callback: (value) => formatCurrency(value) }, grid: { color: colors.gridColor } }, y: { ticks: { color: colors.textColor }, grid: { display: false } } }, plugins: { legend: { display: false } } }
             });
             
+            // --- Win/Loss Distribution Chart ---
+            const winLossCtx = document.getElementById('winLossDistributionChart')?.getContext('2d');
+            const winLossCanvas = document.getElementById('winLossDistributionChart');
+            const winLossMessage = document.getElementById('winLossMessage');
+
+            if(winLossCtx && winLossCanvas && winLossMessage) {
+                 if (closedTrades.length === 0) {
+                    winLossCanvas.classList.add('hidden');
+                    winLossMessage.classList.remove('hidden');
+                    if (charts['winLossDistributionChart']) {
+                        charts['winLossDistributionChart'].destroy();
+                        delete charts['winLossDistributionChart'];
+                    }
+                } else {
+                    winLossCanvas.classList.remove('hidden');
+                    winLossMessage.classList.add('hidden');
+
+                    const wins = closedTrades.filter(t => calculateNetPnl(t) > 0).length;
+                    const losses = closedTrades.length - wins;
+
+                    createChart(winLossCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Winning Trades', 'Losing Trades'],
+                            datasets: [{
+                                data: [wins, losses],
+                                backgroundColor: [colors.green, colors.red],
+                                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim(),
+                                borderWidth: 4,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: colors.textColor,
+                                        boxWidth: 12,
+                                        padding: 20
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.raw !== null) {
+                                                label += `${context.raw} trades`;
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // --- Daily P&L Chart ---
+            const dailyPnlCtx = document.getElementById('dailyPnlChart')?.getContext('2d');
+            const dailyPnlCanvas = document.getElementById('dailyPnlChart');
+            const dailyPnlMessage = document.getElementById('dailyPnlMessage');
+
+            if(dailyPnlCtx && dailyPnlCanvas && dailyPnlMessage) {
+                if (closedTrades.length === 0) {
+                    dailyPnlCanvas.classList.add('hidden');
+                    dailyPnlMessage.classList.remove('hidden');
+                    if (charts['dailyPnlChart']) {
+                        charts['dailyPnlChart'].destroy();
+                        delete charts['dailyPnlChart'];
+                    }
+                } else {
+                    dailyPnlCanvas.classList.remove('hidden');
+                    dailyPnlMessage.classList.add('hidden');
+
+                    const dailyPnl = {};
+                    closedTrades.forEach(trade => {
+                        const pnl = calculateNetPnl(trade);
+                        const dateKey = trade.exitDate.toDate().toISOString().split('T')[0];
+                        if (!dailyPnl[dateKey]) {
+                            dailyPnl[dateKey] = 0;
+                        }
+                        dailyPnl[dateKey] += pnl;
+                    });
+
+                    const sortedDates = Object.keys(dailyPnl).sort();
+                    const dailyPnlLabels = sortedDates.map(dateStr => {
+                        const d = new Date(dateStr);
+                        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                    });
+                    const dailyPnlData = sortedDates.map(date => dailyPnl[date]);
+
+                    createChart(dailyPnlCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: dailyPnlLabels,
+                            datasets: [{
+                                label: 'Daily P&L',
+                                data: dailyPnlData,
+                                backgroundColor: (context) => context.raw >= 0 ? colors.green : colors.red,
+                                borderRadius: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: colors.textColor, autoSkip: true, maxTicksLimit: 20 }, grid: { display: false } },
+                                y: { ticks: { color: colors.textColor, callback: (value) => formatCurrency(value) }, grid: { color: colors.gridColor } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        title: function(context) {
+                                            return `Date: ${context[0].label}`;
+                                        },
+                                        label: function(context) {
+                                            let pnl = context.raw;
+                                            return `P&L: ${formatCurrency(pnl)}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
             // --- ADDED: Daily Win Rate vs Avg Win Rate Chart ---
             const dailyWinRateCtx = document.getElementById('dailyWinRateChart')?.getContext('2d');
             if (dailyWinRateCtx && closedTrades.length > 0) {
@@ -2985,4 +3135,5 @@
     </script>
 </body>
 </html>
+
 
